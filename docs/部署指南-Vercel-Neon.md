@@ -22,7 +22,7 @@
 │  └─────────────────────────┘  │
 │                               │
 │  ┌─────────────────────────┐  │
-│  │ Serverless 函数         │  │  ← api/[...path].ts，跑的是 server.ts
+│  │ Serverless 函数         │  │  ← api/[...path].ts / api/router.ts，共用 server.ts
 │  │ /api/auth/*  登录       │  │
 │  │ /api/sync/*  同步读写   │  │
 │  │ /api/ai/*    AI 代理    │  │
@@ -57,7 +57,7 @@
 | `src/` | 39 个前端源码文件 | 全部界面与业务逻辑 |
 | `public/data/` | 9 个词库 JSON，共 10.6 MB | 最大 `en-cefr-c2.json` 2.8 MB，远低于 GitHub 100 MB 单文件上限，不需要 LFS |
 | `server.ts` | Express 主服务 | 本地和 Serverless 共用同一份路由 |
-| `api/[...path].ts` | Vercel 函数入口 | 见第 6 节的原理说明 |
+| `api/[...path].ts` / `api/router.ts` | Vercel 函数入口 | 一级 API 直达；嵌套 API 由 rewrite 转发，见第 10 节 |
 | `package.json` / `package-lock.json` | 依赖声明与锁定 | Vercel 靠它 `npm install` |
 | `tsconfig.json` / `vite.config.ts` / `vercel.json` | 构建与部署配置 | |
 | `index.html` / `README.md` | 入口页与说明 | |
@@ -255,11 +255,16 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ### 4.4 函数区域（很重要，影响同步速度）
 
-`vercel.json` 里已经写死：
+`vercel.json` 里已经写好函数时限：
 
 ```json
-"functions": { "api/[...path].ts": { "memory": 1024, "maxDuration": 60 } }
+"functions": {
+  "api/[...path].ts": { "maxDuration": 60 },
+  "api/router.ts": { "maxDuration": 60 }
+}
 ```
+
+函数 CPU / 内存使用 Vercel 项目设置；启用 Fluid Compute 时不要在 `vercel.json` 单独设置函数内存。
 
 但**函数区域不在 vercel.json 里配，而在项目设置里配**：
 
@@ -301,7 +306,7 @@ https://<你的域名>/api/auth/status
 ```
 
 - 返回 **500 / 502 / FUNCTION_INVOCATION_FAILED** → 去看项目 **Deployments → 最新一次 → Functions 日志**
-- 返回 **404** → 函数没被识别，检查仓库里是否真的有 `api/[...path].ts`（文件名带方括号），以及 `vercel.json` 是否完整上传
+- 返回 **404** → 检查最新部署是否包含 `api/[...path].ts`、`api/router.ts` 和 `vercel.json` 中的嵌套 API rewrite；多层路径如 `/api/auth/status`、`/api/ai/config` 应由 `api/router.ts` 处理
 
 ### 5.2 数据库真的连上了
 
@@ -353,7 +358,7 @@ https://<你的域名>/api/sync/state
 | 上传大文件/大备份报 413 | Vercel 请求体上限 **4.5 MB** | 本项目同步包是几十 KB 量级，正常不会触发；若手动导入超大词库请走静态文件 |
 | AI 回复被截断 | 同上，或模型侧超时 | 缩短提问、换模型 |
 
-**看日志的正确位置**：项目 → **Deployments** → 点最新一次 → **Functions** 标签 → 选 `api/[...path]` → 看实时日志。`console.error` 的内容都在这里。
+**看日志的正确位置**：项目 → **Deployments** → 点最新一次 → **Functions** 标签 → 查看 `api/[...path]` 或 `api/router`。`console.error` 的内容都在这里。
 
 ---
 
@@ -407,7 +412,7 @@ git push
 
 | 问题 | 答案 |
 |---|---|
-| 为什么函数入口是 `api/[...path].ts` 而不是 `api/index.ts`？ | `index.ts` 配合重写会把 `/api/sync/state` 改写成 `/api`，Express 拿不到原始路径，全部 404。catch-all 动态路由保留原始 URL。 |
+| 为什么有 `api/router.ts`？ | Vercel 将嵌套 API rewrite 到共享函数；入口从 `__vercel_api_path` 还原 `/api/...`，再交给 Express，避免多层 API 路径返回 404。 |
 | 为什么 import 写 `'../server.js'`？ | `package.json` 是 `"type": "module"`，产物是 ESM，Node 要求 import 带扩展名；运行时文件是编译后的 `server.js`，TS 编译期会自动映射回 `server.ts` 做类型检查。 |
 | 为什么本地 `npm run dev` 和线上行为一致？ | 两边跑的是同一份 `server.ts`。本地走 Vite 中间件渲染，线上 `server.ts` 检测到 `process.env.VERCEL` 就不 `listen`，把 `app` 交给 Vercel 调用。 |
 | 为什么词库不放进数据库？ | 27,734 条 JSON 由 CDN 发，命中缓存几乎零成本；进数据库反而每次都要查、要序列化，还占额度。 |

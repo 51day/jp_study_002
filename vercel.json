@@ -6,11 +6,17 @@
   "outputDirectory": "dist",
   "functions": {
     "api/[...path].ts": {
-      "memory": 1024,
+      "maxDuration": 60
+    },
+    "api/router.ts": {
       "maxDuration": 60
     }
   },
   "rewrites": [
+    {
+      "source": "/api/:namespace/:path*",
+      "destination": "/api/router?__vercel_api_path=:namespace/:path*"
+    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"

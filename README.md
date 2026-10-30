@@ -44,7 +44,7 @@
 
 ## 🚀 部署到 Vercel + Neon
 
-项目已开箱支持 Vercel 部署：前端走 CDN 静态托管，服务端是一个 catch-all Serverless 函数（`api/[...path].ts`，内部跑的就是 `server.ts`），数据落在 Neon PostgreSQL。
+项目已开箱支持 Vercel 部署：前端走 CDN 静态托管，`api/[...path].ts` 处理一级 API，`api/router.ts` 通过 Vercel rewrite 接收嵌套 API 并调用共用的 `server.ts` Express 路由，数据落在 Neon PostgreSQL。
 
 **四步就能上线**：
 
@@ -84,7 +84,7 @@ npm run dev              # http://localhost:3000
 
 - **前端**：React 19 + TypeScript + Vite + Tailwind CSS v4 (CSS-first) + Lucide + Motion
 - **服务端**：Node.js 22 + Express（`server.ts`，本地与 Serverless 共用同一份路由）
-- **函数入口**：`api/[...path].ts`（catch-all，保留原始路径给 Express 路由表）
+- **函数入口**：`api/[...path].ts` 处理一级 API；`api/router.ts` 接收 `vercel.json` 重写的嵌套 API 并还原 Express 路径
 - **数据库**：PostgreSQL / Neon，`pg` 连接池（`max: 2`，面向 Serverless）
 - **AI**：`@google/genai` + Vercel AI SDK（Gemini / DeepSeek / OpenAI / 自定义兼容端点），全部服务端代理，Key 不入前端
 - **同步**：离线优先，localStorage 为真源，20s 防抖推送 + 切后台 flush + last-write-wins 合并 + 墓碑删除
@@ -95,7 +95,8 @@ npm run dev              # http://localhost:3000
 ├── src/                 前端源码（components / services / i18n / types）
 ├── public/data/         词库 JSON（27,734 词，CDN 直发）
 ├── server.ts            Express 主服务（认证 / 同步 / AI 代理 / WebDAV）
-├── api/[...path].ts     Vercel Serverless 入口
+├── api/[...path].ts     Vercel 一级 API 入口
+├── api/router.ts        Vercel 嵌套 API rewrite 入口
 ├── docs/                架构与部署文档
 ├── vercel.json          构建与函数配置
 └── .env.example         环境变量模板（真实 .env 不入库）
