@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>背单词 (MemorizeWord) - 科学背单词与AI语境实战</title>
+    <meta name="description" content="基于科学FSRS-5记忆算法、中英日双语词库(CEFR A1-C2 / JLPT N5-N1)与Gemini AI对话实战的背单词与语言学习系统" />
+    <meta property="og:title" content="背单词 (MemorizeWord) - 科学背单词与AI语境实战" />
+    <meta property="og:description" content="基于科学FSRS-5记忆算法、中英日双语词库(CEFR A1-C2 / JLPT N5-N1)与Gemini AI对话实战的背单词与语言学习系统" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      (function() {
+        const NativeWebSocket = window.WebSocket;
+        if (NativeWebSocket) {
+          window.WebSocket = function(url, protocols) {
+            const isViteHmr = 
+              protocols === 'vite-hmr' || 
+              (Array.isArray(protocols) && protocols.includes('vite-hmr')) ||
+              (typeof url === 'string' && (url.includes('vite-hmr') || url.includes('/@vite')));
+              
+            if (isViteHmr) {
+              const emitter = new EventTarget();
+              const fakeWs = {
+                url: String(url),
+                readyState: 1, // WebSocket.OPEN
+                CONNECTING: 0,
+                OPEN: 1,
+                CLOSING: 2,
+                CLOSED: 3,
+                protocol: 'vite-hmr',
+                extensions: '',
+                bufferedAmount: 0,
+                binaryType: 'blob',
+                send: function() {},
+                close: function() {},
+                addEventListener: function(type, listener, options) {
+                  emitter.addEventListener(type, listener, options);
+                  if (type === 'open') {
+                    setTimeout(function() {
+                      if (typeof listener === 'function') {
+                        listener({ type: 'open', target: fakeWs });
+                      } else if (listener && typeof listener.handleEvent === 'function') {
+                        listener.handleEvent({ type: 'open', target: fakeWs });
+                      }
+                    }, 0);
+                  }
+                },
+                removeEventListener: function(type, listener, options) {
+                  emitter.removeEventListener(type, listener, options);
+                },
+                dispatchEvent: function(event) {
+                  return emitter.dispatchEvent(event);
+                },
+                onopen: null,
+                onclose: null,
+                onerror: null,
+                onmessage: null,
+              };
+              return fakeWs;
+            }
+            return new NativeWebSocket(url, protocols);
+          };
+          window.WebSocket.prototype = NativeWebSocket.prototype;
+          window.WebSocket.CONNECTING = 0;
+          window.WebSocket.OPEN = 1;
+          window.WebSocket.CLOSING = 2;
+          window.WebSocket.CLOSED = 3;
+        }
+
+        window.addEventListener('error', function (e) {
+          var msg = e.message || (e.error && e.error.message) || '';
+          var filename = e.filename || '';
+          if (
+            msg.includes('WebSocket') ||
+            msg.includes('createWebSocketModuleRunnerTransport') ||
+            filename.includes('@vite/client')
+          ) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function (e) {
+          var reason = e.reason;
+          var msg = (reason && (reason.message || reason.stack || String(reason))) || '';
+          if (
+            msg.includes('WebSocket') ||
+            msg.includes('createWebSocketModuleRunnerTransport') ||
+            msg.includes('@vite/client')
+          ) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

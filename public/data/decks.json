@@ -1,0 +1,90 @@
+[
+  {
+    "id": "en-cefr-a1",
+    "language": "en",
+    "name": "英语 A1",
+    "sort_order": 0,
+    "word_count": 1754,
+    "file": "/data/decks/en-cefr-a1.json"
+  },
+  {
+    "id": "en-cefr-a2",
+    "language": "en",
+    "name": "英语 A2",
+    "sort_order": 1,
+    "word_count": 1949,
+    "file": "/data/decks/en-cefr-a2.json"
+  },
+  {
+    "id": "en-cefr-b1",
+    "language": "en",
+    "name": "英语 B1",
+    "sort_order": 2,
+    "word_count": 3688,
+    "file": "/data/decks/en-cefr-b1.json"
+  },
+  {
+    "id": "en-cefr-b2",
+    "language": "en",
+    "name": "英语 B2",
+    "sort_order": 3,
+    "word_count": 3787,
+    "file": "/data/decks/en-cefr-b2.json"
+  },
+  {
+    "id": "en-cefr-c1",
+    "language": "en",
+    "name": "英语 C1",
+    "sort_order": 4,
+    "word_count": 606,
+    "file": "/data/decks/en-cefr-c1.json"
+  },
+  {
+    "id": "en-cefr-c2",
+    "language": "en",
+    "name": "英语 C2",
+    "sort_order": 5,
+    "word_count": 8216,
+    "file": "/data/decks/en-cefr-c2.json"
+  },
+  {
+    "id": "ja-jlpt-n5",
+    "language": "ja",
+    "name": "日语 N5",
+    "sort_order": 0,
+    "word_count": 674,
+    "file": "/data/decks/ja-jlpt-n5.json"
+  },
+  {
+    "id": "ja-jlpt-n4",
+    "language": "ja",
+    "name": "日语 N4",
+    "sort_order": 1,
+    "word_count": 629,
+    "file": "/data/decks/ja-jlpt-n4.json"
+  },
+  {
+    "id": "ja-jlpt-n3",
+    "language": "ja",
+    "name": "日语 N3",
+    "sort_order": 2,
+    "word_count": 1647,
+    "file": "/data/decks/ja-jlpt-n3.json"
+  },
+  {
+    "id": "ja-jlpt-n2",
+    "language": "ja",
+    "name": "日语 N2",
+    "sort_order": 3,
+    "word_count": 1776,
+    "file": "/data/decks/ja-jlpt-n2.json"
+  },
+  {
+    "id": "ja-jlpt-n1",
+    "language": "ja",
+    "name": "日语 N1",
+    "sort_order": 4,
+    "word_count": 3008,
+    "file": "/data/decks/ja-jlpt-n1.json"
+  }
+]

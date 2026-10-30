@@ -1,0 +1,10 @@
+{
+  "activeProvider": "deepseek",
+  "geminiModel": "gemini-2.5-flash",
+  "deepseekModel": "deepseek-chat",
+  "openaiModel": "gpt-4o-mini",
+  "customBaseUrl": "https://api.openai.com/v1",
+  "customModel": "gpt-4o-mini",
+  "updatedAt": 1793265776043,
+  "deepseekApiKeyEncrypted": "b88aff540960a57ca86e8d62:12206a5559b2719070eb16989abeb1ae:67605e52e34acc2f27d7f846bcf6c136df242c2d42e473bf801c5986f3d63b0d8eb866"
+}

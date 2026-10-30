@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* ============================================================
+   全局布局尺寸变量
+   用途：统一导航栏 / 手机底部 tab bar 的高度，
+   避免各处硬编码 100vh-80px 导致页面多出一截滚动
+   ============================================================ */
+:root {
+  --nav-h: 4rem;   /* 顶部 Navbar 高度 h-16 */
+  --tabbar-h: 0px; /* 手机底部 tab bar，桌面为 0 */
+}
+
+@media (max-width: 767px) {
+  :root {
+    --tabbar-h: 3.75rem; /* 60px，手机端才启用 */
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* 移动端消除点击延迟与双击缩放 */
+  button,
+  [role="button"],
+  summary,
+  label {
+    touch-action: manipulation;
+  }
+}
+
+/* ============================================================
+   Tailwind v4 是 CSS-first 模式，本项目没有 tailwind.config.js，
+   因此 scrollbar-none 默认不会生成任何 CSS。
+   这里补齐实现，让隐藏滚动条真正生效。
+   ============================================================ */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 横向滚动区：吸附 + 左右边缘内边距，方便手指滑动 */
+@utility snap-row {
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 1rem;
+  scroll-padding-right: 1rem;
+}

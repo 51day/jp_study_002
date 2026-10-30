@@ -1,0 +1,16 @@
+# 统一换行符，避免 Windows / macOS / Vercel 之间产生无意义的 diff
+* text=auto eol=lf
+
+# 二进制文件不做换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+
+# 词库与锁文件：不参与语言统计，减少 diff 噪音
+public/data/**/*.json -diff linguist-vendored
+package-lock.json -diff
