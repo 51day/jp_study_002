@@ -306,7 +306,7 @@ https://<你的域名>/api/auth/status
 ```
 
 - 返回 **500 / 502 / FUNCTION_INVOCATION_FAILED** → 去看项目 **Deployments → 最新一次 → Functions 日志**
-- 返回 **404** → 检查最新部署是否包含 `api/[...path].ts`、`api/router.ts` 和 `vercel.json` 中的嵌套 API rewrite；多层路径如 `/api/auth/status`、`/api/ai/config` 应由 `api/router.ts` 处理
+- 返回 **404** → 检查最新部署是否包含 `api/[...path].ts`、`api/router.ts` 和 `vercel.json` 中的 API rewrite；单层路径如 `/api/login`、`/api/logout` 与多层路径如 `/api/auth/status` 都应由 `api/router.ts` 处理
 
 ### 5.2 数据库真的连上了
 
@@ -412,7 +412,7 @@ git push
 
 | 问题 | 答案 |
 |---|---|
-| 为什么有 `api/router.ts`？ | Vercel 将嵌套 API rewrite 到共享函数；入口从 `__vercel_api_path` 还原 `/api/...`，再交给 Express，避免多层 API 路径返回 404。 |
+| 为什么有 `api/router.ts`？ | Vercel 将单层和嵌套 API rewrite 到共享函数；入口从 `__vercel_api_path` 还原 `/api/...`，再交给 Express。 |
 | 为什么 import 写 `'../server.js'`？ | `package.json` 是 `"type": "module"`，产物是 ESM，Node 要求 import 带扩展名；运行时文件是编译后的 `server.js`，TS 编译期会自动映射回 `server.ts` 做类型检查。 |
 | 为什么本地 `npm run dev` 和线上行为一致？ | 两边跑的是同一份 `server.ts`。本地走 Vite 中间件渲染，线上 `server.ts` 检测到 `process.env.VERCEL` 就不 `listen`，把 `app` 交给 Vercel 调用。 |
 | 为什么词库不放进数据库？ | 27,734 条 JSON 由 CDN 发，命中缓存几乎零成本；进数据库反而每次都要查、要序列化，还占额度。 |

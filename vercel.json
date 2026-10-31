@@ -14,6 +14,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/:namespace",
+      "destination": "/api/router?__vercel_api_path=:namespace"
+    },
+    {
       "source": "/api/:namespace/:path*",
       "destination": "/api/router?__vercel_api_path=:namespace/:path*"
     },
