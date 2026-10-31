@@ -11,7 +11,12 @@ import {
   LearningSyncPayload,
   CloudSyncStatus,
 } from '../types';
-import { ClientSyncController, mergeLearningPayload } from './syncEngine';
+import {
+  ClientSyncController,
+  CLOUD_SYNC_LOG_LIMIT,
+  LOCAL_SYNC_LOG_LIMIT,
+  mergeLearningPayload,
+} from './syncEngine';
 import { apiClient } from './apiClient';
 
 const SETTINGS_KEY = 'memorize_word_settings';
@@ -943,8 +948,7 @@ class StorageService {
         if (imported.achievements) localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(imported.achievements));
         if (imported.settings) this.saveSettings(imported.settings);
         const count = imported.progress ? Object.keys(imported.progress).length : 0;
-        // 导入/恢复成功后，强推一份完整合并结果到云端
-        this.syncToCloud(true).catch((e) => console.warn('Post-import cloud push failed:', e));
+        this.syncToCloud(true).catch((e) => console.warn('Post-import cloud overwrite failed:', e));
         return { success: true, message: `已完全覆盖还原备份！包含 ${count} 个进度条目。`, count };
       }
 
@@ -987,8 +991,9 @@ class StorageService {
         this.saveSettings(imported.settings);
       }
 
-      // 导入/恢复成功后，强推一份完整合并结果到云端
-      this.syncToCloud(true).catch((e) => console.warn('Post-import cloud push failed:', e));
+      // Merge imported data with cloud state instead of replacing newer remote data.
+      this.markDirty(1);
+      this.syncToCloud(false).catch((e) => console.warn('Post-import cloud merge failed:', e));
       return { success: true, message: `成功导入并合并 ${count} 个单词的进度与相关数据！`, count };
     } catch (err: any) {
       return { success: false, message: `导入失败: ${err.message}`, count: 0 };
@@ -1046,8 +1051,9 @@ class StorageService {
 
   // ===== Cloud Sync (Vercel + Neon PostgreSQL) 对外接口 =====
 
-  public getSyncPayload(): LearningSyncPayload {
+  public getSyncPayload(includeAllLogs = false): LearningSyncPayload {
     const settings = this.getSettings();
+    const logs = this.getStudyLogs();
     // customScenarios：仅 isCustom===true 的用户自建场景（内置预设不入库）
     const userScenarios = this.getCustomScenarios()
       .filter((s) => s.isCustom === true)
@@ -1073,7 +1079,7 @@ class StorageService {
       progress: this.getProgressMap(),
       customWords: this.getCustomWords(),
       customScenarios: [...userScenarios, ...tombstones],
-      logs: this.getStudyLogs(),
+      logs: includeAllLogs ? logs : logs.slice(-CLOUD_SYNC_LOG_LIMIT),
       achievements: this.getAchievements(),
       updatedAt: settings.updatedAt || Date.now(),
     };
@@ -1131,8 +1137,8 @@ class StorageService {
   private async doCloudPull(): Promise<void> {
     const remote = await apiClient.getCloudSyncState();
     if (!remote.exists || !remote.stateData) return; // 云端尚无数据
-    const local = this.getSyncPayload();
-    const merged = mergeLearningPayload(local, remote.stateData);
+    const local = this.getSyncPayload(true);
+    const merged = mergeLearningPayload(local, remote.stateData, LOCAL_SYNC_LOG_LIMIT);
     this.applySyncPayload(merged);
   }
 
@@ -1179,4 +1185,3 @@ class StorageService {
 }
 
 export const storage = new StorageService();
-

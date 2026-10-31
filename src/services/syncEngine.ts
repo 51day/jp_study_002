@@ -20,6 +20,9 @@ import type {
   UserSettings,
 } from '../types';
 
+export const CLOUD_SYNC_LOG_LIMIT = 3000;
+export const LOCAL_SYNC_LOG_LIMIT = 10000;
+
 /* =========================================================================
  * Part 1 —— 通用无冲突合并积木（纯函数，前后端均可 import）
  * ========================================================================= */
@@ -152,7 +155,7 @@ const getAchievementTime = (a: Achievement): number => a.unlockedAt || a.progres
 /**
  * 合并本地与云端的 LearningSyncPayload。
  *  - progress：按 updatedAt||lastReviewAt 合并（tieBreaker=reps）。
- *  - logs：按 id 去重，保留最新 3000 条。
+ *  - logs：按 id 去重，保留最新 maxLogs 条（服务端默认 3000，客户端可保留本地 10000 条）。
  *  - customWords：按 id 合并（含墓碑）。
  *  - customScenarios：仅合并 isCustom===true 的用户自建场景（内置预设不入库）。
  *  - achievements：已解锁优先（保留最早解锁时间），progress 取 max。
@@ -160,7 +163,8 @@ const getAchievementTime = (a: Achievement): number => a.unlockedAt || a.progres
  */
 export function mergeLearningPayload(
   local: LearningSyncPayload,
-  remote: LearningSyncPayload
+  remote: LearningSyncPayload,
+  maxLogs = CLOUD_SYNC_LOG_LIMIT
 ): LearningSyncPayload {
   const safeLocal = local || ({} as LearningSyncPayload);
   const safeRemote = remote || ({} as LearningSyncPayload);
@@ -179,7 +183,7 @@ export function mergeLearningPayload(
     safeRemote.logs || [],
     getLogId,
     getLogTime,
-    3000
+    maxLogs
   );
 
   // customWords 合并
@@ -198,7 +202,7 @@ export function mergeLearningPayload(
     remoteCustomScenarios,
     getScenarioId,
     getScenarioTime
-  ).filter((s) => !s.deletedAt);
+  );
 
   // achievements 合并：已解锁优先（保留最早解锁时间），progress 取 max
   const localAch = safeLocal.achievements || [];

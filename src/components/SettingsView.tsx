@@ -108,6 +108,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [resetSuccessNotice, setResetSuccessNotice] = useState(false);
   const [snapshotNotice, setSnapshotNotice] = useState<string | null>(null);
+  const [pendingCloudOverwrite, setPendingCloudOverwrite] = useState<
+    | { kind: 'backup' | 'webdav'; rawJson: string }
+    | { kind: 'snapshot'; id: string; name: string }
+    | null
+  >(null);
 
   // WebDAV Cloud Sync States
   const [webdavConfig, setWebdavConfig] = useState<WebDavConfig>(storage.getWebDavConfig());
@@ -364,13 +369,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   // Restore Snapshot
   const handleRestoreSnapshot = (id: string, name: string) => {
-    const ok = storage.restoreSnapshot(id);
-    if (ok) {
-      onRefreshData();
-      refreshStorageLists();
-      setSnapshotNotice(`已成功还原到快照：「${name}」`);
-      setTimeout(() => setSnapshotNotice(null), 4000);
-    }
+    setPendingCloudOverwrite({ kind: 'snapshot', id, name });
   };
 
   // Delete Snapshot
@@ -425,6 +424,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const confirmApplyImport = (mode: 'merge' | 'overwrite') => {
     if (!backupInspection) return;
+    if (mode === 'overwrite') {
+      setPendingCloudOverwrite({ kind: 'backup', rawJson: backupInspection.rawJson });
+      return;
+    }
     const res = storage.importData(backupInspection.rawJson, mode);
     setImportNotice(res);
     setBackupInspection(null);
@@ -447,6 +450,53 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const handleUpdateWebdav = (delta: Partial<WebDavConfig>) => {
     const updated = storage.saveWebDavConfig(delta);
     setWebdavConfig(updated);
+  };
+
+  const confirmCloudOverwrite = () => {
+    if (!pendingCloudOverwrite) return;
+    const pending = pendingCloudOverwrite;
+    setPendingCloudOverwrite(null);
+
+    if (pending.kind === 'snapshot') {
+      const success = storage.restoreSnapshot(pending.id);
+      if (success) {
+        onRefreshData();
+        refreshStorageLists();
+      }
+      setSnapshotNotice(
+        success ? `已成功还原到快照：「${pending.name}」` : `快照「${pending.name}」还原失败`
+      );
+      setTimeout(() => setSnapshotNotice(null), 4000);
+      return;
+    }
+
+    if (pending.kind === 'backup') {
+      setBackupInspection(null);
+    } else {
+      setShowWebdavImportConfirm(null);
+    }
+
+    if (pending.kind === 'webdav') {
+      storage.createSnapshot('WebDAV 覆盖前安全快照');
+    }
+    const res = storage.importData(pending.rawJson, 'overwrite');
+    if (pending.kind === 'backup') {
+      setImportNotice(res);
+    } else {
+      setWebdavNotice({
+        success: res.success,
+        message: res.success ? `已成功拉取并恢复 WebDAV 数据！${res.message}` : res.message,
+      });
+      handleUpdateWebdav({
+        lastSyncAt: Date.now(),
+        lastSyncStatus: res.success ? 'success' : 'error',
+        lastSyncMessage: res.message,
+      });
+    }
+    if (res.success) {
+      onRefreshData();
+      refreshStorageLists();
+    }
   };
 
   const handleTestWebdav = async () => {
@@ -529,6 +579,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const confirmWebdavImport = (mode: 'merge' | 'overwrite') => {
     if (!showWebdavImportConfirm) return;
+    if (mode === 'overwrite') {
+      setPendingCloudOverwrite({ kind: 'webdav', rawJson: showWebdavImportConfirm.rawJson });
+      return;
+    }
     storage.createSnapshot('WebDAV 云端拉取前安全快照');
     const res = storage.importData(showWebdavImportConfirm.rawJson, mode);
     setWebdavNotice({
@@ -698,6 +752,40 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       )}
 
+      {pendingCloudOverwrite && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 border border-rose-200 dark:border-rose-900 shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">确认覆盖云端数据？</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                {pendingCloudOverwrite.kind === 'snapshot'
+                  ? `还原快照「${pendingCloudOverwrite.name}」会用快照内容覆盖 PostgreSQL 云端学习数据。`
+                  : '此操作会用所选备份覆盖 PostgreSQL 云端学习数据，备份之后产生的云端记录可能丢失。'}
+                {' '}建议确认已有备份后再继续。
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setPendingCloudOverwrite(null)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={confirmCloudOverwrite}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition"
+              >
+                确认并覆盖
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. Modal: Reset Confirm */}
       {showConfirmReset && (
@@ -1873,7 +1961,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
 
         <div className="text-[10px] text-slate-400 leading-relaxed">
-          ⚙️ 同步机制：本地变更累计达到阈值或静置 20 秒后自动推送；切回前台静默拉取。包含词库进度、自定义词、自建场景、学习日志、成就与设置，WebDAV 密码等敏感信息不入库。
+          ⚙️ 同步机制：本地变更累计达到阈值或静置 20 秒后自动推送；切回前台静默拉取。每台设备本地最多保留 10000 条学习日志，Vercel 云端请求最多传输最近 3000 条。包含词库进度、自定义词、自建场景、学习日志、成就与设置，WebDAV 密码等敏感信息不入库。
         </div>
       </div>
 

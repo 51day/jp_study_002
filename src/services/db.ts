@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { encryptApiKey, decryptApiKey, maskApiKey } from './encryption.js';
-import { mergeLearningPayload } from './syncEngine.js';
+import { CLOUD_SYNC_LOG_LIMIT, mergeLearningPayload } from './syncEngine.js';
 import type { LearningSyncPayload } from '../types/index.js';
 
 // 必须在 new DatabaseService() 之前加载 .env，否则 pool 初始化时读不到 DATABASE_URL
@@ -201,7 +201,11 @@ class DatabaseService {
           finalData = incomingData;
         } else {
           // 本地（设备推送的 payload）与云端合并：local=incoming, remote=cloud
-          finalData = mergeLearningPayload(incomingData, existing.state_data as LearningSyncPayload);
+          finalData = mergeLearningPayload(
+            incomingData,
+            existing.state_data as LearningSyncPayload,
+            CLOUD_SYNC_LOG_LIMIT
+          );
         }
         nextVersion = Number(existing.sync_version) + 1;
       }
