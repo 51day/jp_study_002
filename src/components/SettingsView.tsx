@@ -148,10 +148,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setIsManualCloudSync(true);
     setCloudSyncNotice(null);
     try {
+      storage.markDirty(1);
       await storage.syncToCloud();
       setCloudSyncNotice({ success: true, message: '已手动同步本地数据到 PostgreSQL 云端' });
     } catch (err: any) {
       setCloudSyncNotice({ success: false, message: err?.message || '同步失败，请检查网络或数据库配置' });
+    } finally {
+      setIsManualCloudSync(false);
     }
   };
 
@@ -1852,7 +1855,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <button
             type="button"
             onClick={handleManualCloudSync}
-            disabled={isManualCloudSync}
+            disabled={isManualCloudSync || cloudSyncStatus === 'syncing'}
             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-bold transition shadow-sm"
           >
             <CloudUpload className="w-3.5 h-3.5" />

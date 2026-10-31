@@ -374,6 +374,11 @@ export class ClientSyncController {
     if (this.flushInFlight) return;
     if (!this.isDirty && !forceOverwrite) return;
 
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+
     this.flushInFlight = true;
     this.setStatus('syncing');
     try {
@@ -386,6 +391,7 @@ export class ClientSyncController {
       // 离线（网络）与服务器错误分别标记
       const isOffline = err && (err.name === 'TypeError' || /Failed to fetch|NetworkError|offline/i.test(err.message || ''));
       this.setStatus(isOffline ? 'offline' : 'error', err?.message || String(err));
+      throw err;
     } finally {
       this.flushInFlight = false;
     }
